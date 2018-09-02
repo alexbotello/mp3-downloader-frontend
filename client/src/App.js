@@ -1,8 +1,8 @@
 import React, { Component } from 'react';
 
-import Banner from './Components/Banner'
-import Form from './Components/Form'
-import Foot from './Components/Footer'
+import Banner from './Components/Banner';
+import Form from './Components/Form';
+import Foot from './Components/Footer';
 import './App.css';
 
 
