@@ -1,7 +1,9 @@
-import React, { Component, Fragment } from 'react';
-import { Section, Field, Label, Input, Button, Columns, Column } from 'bloomer';
+import React, { Component } from 'react';
+import { Section, Field, Input, Button, Container, Columns, Column, Title } from 'bloomer';
 import FileSaver from 'file-saver';
 import axios from 'axios';
+
+import Icon from './LoadingIcon';
 
 require("dotenv").config()
 
@@ -9,8 +11,10 @@ require("dotenv").config()
 class Form extends Component {
   state = {
     link: "",
-    file: "",
+    isDownloading: false,
+    isConverting: false,
     api: process.env.REACT_APP_API,
+    test: process.env.REACT_APP_TEST,
     token: process.env.REACT_APP_TOKEN,
   }
   handleChange = event => {
@@ -24,38 +28,60 @@ class Form extends Component {
       this.sendDownloadRequest(url)
   }
   sendDownloadRequest(url) {
+    this.setState({ isDownloading: true })
     axios.get(`${this.state.api}/download?url=${url}`, {
       headers: {'Authorization': this.state.token}
     })
       .then(response => {
-        this.setState({ file: response.data['file'] })
-        this.retrieveAudioFile()
+        this.setState({
+          isDownloading: false,
+          isConverting: true,
+        })
+        const file = String(response.data['file'])
+        this.retrieveAudioFile(file)
       })
       .catch(err => {
+        this.setState({ isDownloading: false })
         console.log(err)
       })
   }
-  retrieveAudioFile() {
-    axios.get(`${this.state.api}/convert/${this.state.file}`, {
+  retrieveAudioFile(file) {
+    axios.get(`${this.state.api}/convert/${file}`, {
       responseType: 'blob',
       timeout: 300000,
       headers: {'Authorization': this.state.token}
     })
       .then(response => {
+        this.setState({ isConverting: false })
         const filename = response.headers['content-disposition'].split('filename=')[1]
         FileSaver.saveAs(new Blob([response.data]), filename)
       })
       .catch(err => {
+        this.setState({ isConverting: false })
         console.log(err)
       })
   }
+  displayLoadingText() {
+    if (this.state.isDownloading)
+      return <Title isSize={4}>downloading...</Title>
+    else if (this.state.isConverting)
+      return <Title isSize={4}>converting...</Title>
+  }
+  displayLoadingIcon() {
+    if (this.state.isDownloading || this.state.isConverting) {
+      return <Icon />
+    }
+    else {
+      return null
+    }
+  }
   render() {
     return(
-      <Fragment>
+      <Container>
         <Section>
           <Field>
             <Columns isCentered>
-              <Column isSize={4}>
+              <Column isSize={6}>
                 <Input
                   type="text"
                   name="link"
@@ -64,7 +90,8 @@ class Form extends Component {
                   onChange={this.handleChange}
                   isSize="medium"
                   isColor="primary"
-                />
+                  hasTextAlign="centered"
+                  />
               </Column>
             </Columns>
 
@@ -76,7 +103,9 @@ class Form extends Component {
             </Button>
           </Field>
         </Section>
-      </Fragment>
+        {this.displayLoadingIcon()}
+        {this.displayLoadingText()}
+      </Container>
     )
   }
 }
