@@ -10,9 +10,12 @@ require("dotenv").config()
 
 class Form extends Component {
   state = {
-    link: "",
+    url: "",
+    file: "",
     isDownloading: false,
+    downloadFailed: false,
     isConverting: false,
+    conversionFailed: false,
     api: process.env.REACT_APP_API,
     test: process.env.REACT_APP_TEST,
     token: process.env.REACT_APP_TOKEN,
@@ -22,39 +25,116 @@ class Form extends Component {
   }
   handleSubmit = event => {
     event.preventDefault();
-    const url = this.state.link
-    this.setState({ link: '' })
+    const url = this.state.url
+    this.setState({ url: '' })
     if (url)
-      this.sendDownloadRequest(url)
+      this.sendDownloadRequest(url);
   }
   sendDownloadRequest(url) {
+    const data = {'url': url}
     this.setState({ isDownloading: true })
-    axios.get(`${this.state.api}/download?url=${url}`, {
+    axios.post(`${this.state.test}/download`, data, {
       headers: {'Authorization': this.state.token}
     })
       .then(response => {
-        this.setState({
-          isDownloading: false,
-          isConverting: true,
-        })
-        const file = String(response.data['file'])
-        this.retrieveAudioFile(file)
+        console.log(response)
+        const status_url = response.data['Location']
+        this.checkDownloadStatus(status_url)
+      })
+      .catch(err => {
+        console.log(err)
+        this.setState({ isDownloading: false })
+      })
+  }
+  checkDownloadStatus(status_url) {
+    axios.get(`${this.state.test}${status_url}`, {
+      headers: {'Authorization': this.state.token},
+    })
+      .then(response => {
+        console.log(response)
+        const status = response.data['status']
+        if (status === 'SUCCESS') {
+          this.setState({
+            isDownloading: false,
+            file: response.data['file']
+          })
+          this.sendConversionRequest()
+        }
+        else if (status === 'FAILED') {
+          this.setState({
+            isDownloading: false,
+            downloadFailed: true,
+          })
+          return
+        }
+        else {
+          setTimeout(() => {
+            this.checkDownloadStatus(status_url);
+          }, 2000)
+        }
       })
       .catch(err => {
         this.setState({ isDownloading: false })
-        console.log(err)
       })
   }
-  retrieveAudioFile(file) {
-    axios.get(`${this.state.api}/convert/${file}`, {
-      responseType: 'blob',
-      timeout: 300000,
+  sendConversionRequest() {
+    const file = this.state.file
+    this.setState({ isConverting: true })
+    axios.get(`${this.state.test}/convert/${file}`, {
       headers: {'Authorization': this.state.token}
     })
       .then(response => {
+        console.log(response)
+        const status_url = response.data['Location']
+        this.checkConversionStatus(status_url)
+      })
+      .catch(err => {
+        console.log(err)
         this.setState({ isConverting: false })
-        const filename = response.headers['content-disposition'].split('filename=')[1]
-        FileSaver.saveAs(new Blob([response.data]), filename)
+      })
+  }
+  checkConversionStatus(status_url) {
+    axios.get(`${this.state.test}${status_url}`, {
+      headers: {'Authorization': this.state.token},
+    })
+      .then(response => {
+        console.log(response)
+        const status = response.data['status']
+        if (status === 'SUCCESS') {
+          this.setState({
+            isConverting: false,
+            file: response.data['file']
+          })
+          this.retrieveFile()
+        }
+        else if (status === 'FAILED') {
+          this.setState({
+            isConverting: false,
+            conversionFailed: true,
+          })
+        }
+        else {
+          setTimeout(() => {
+            this.checkConversionStatus(status_url)
+          }, 2000)
+        }
+      })
+      .catch(err => {
+        console.log(err)
+        this.setState({ isConverting: false })
+      })
+  }
+  retrieveFile() {
+    const file = this.state.file
+    let encoded = encodeURI(file)
+    axios.get(`${this.state.test}/retrieve/${encoded}`, {
+      responseType: 'blob',
+      timeout: 300000,
+      headers : {'Authorization': this.state.token}
+    })
+      .then(response => {
+        console.log(response)
+        FileSaver.saveAs(new Blob([response.data]), file)
       })
       .catch(err => {
         this.setState({ isConverting: false })
@@ -84,9 +164,9 @@ class Form extends Component {
               <Column isSize={6}>
                 <Input
                   type="text"
-                  name="link"
+                  name="url"
                   placeholder="Please enter a valid URL"
-                  value={this.state.link}
+                  value={this.state.url}
                   onChange={this.handleChange}
                   isSize="medium"
                   isColor="primary"
