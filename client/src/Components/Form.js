@@ -126,8 +126,7 @@ class Form extends Component {
   }
   retrieveFile() {
     const file = this.state.file
-    let encoded = encodeURI(file)
-    axios.get(`${this.state.test}/retrieve/${encoded}`, {
+    axios.get(`${this.state.test}/retrieve/${file}`, {
       responseType: 'blob',
       timeout: 300000,
       headers : {'Authorization': this.state.token}
