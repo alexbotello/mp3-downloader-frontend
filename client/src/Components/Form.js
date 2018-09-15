@@ -33,11 +33,11 @@ class Form extends Component {
   sendDownloadRequest(url) {
     const data = {'url': url}
     this.setState({ isDownloading: true })
-    axios.post(`${this.state.test}/download`, data, {
+    axios.post(`${this.state.api}/download`, data, {
       headers: {'Authorization': this.state.token}
     })
       .then(response => {
-        console.log(response)
+        // console.log(response)
         const status_url = response.data['Location']
         this.checkDownloadStatus(status_url)
       })
@@ -47,11 +47,11 @@ class Form extends Component {
       })
   }
   checkDownloadStatus(status_url) {
-    axios.get(`${this.state.test}${status_url}`, {
+    axios.get(`${this.state.api}${status_url}`, {
       headers: {'Authorization': this.state.token},
     })
       .then(response => {
-        console.log(response)
+        // console.log(response)
         const status = response.data['status']
         if (status === 'SUCCESS') {
           this.setState({
@@ -80,11 +80,11 @@ class Form extends Component {
   sendConversionRequest() {
     const file = this.state.file
     this.setState({ isConverting: true })
-    axios.get(`${this.state.test}/convert/${file}`, {
+    axios.get(`${this.state.api}/convert/${file}`, {
       headers: {'Authorization': this.state.token}
     })
       .then(response => {
-        console.log(response)
+        // console.log(response)
         const status_url = response.data['Location']
         this.checkConversionStatus(status_url)
       })
@@ -94,18 +94,19 @@ class Form extends Component {
       })
   }
   checkConversionStatus(status_url) {
-    axios.get(`${this.state.test}${status_url}`, {
+    axios.get(`${this.state.api}${status_url}`, {
       headers: {'Authorization': this.state.token},
     })
       .then(response => {
-        console.log(response)
+        // console.log(response)
         const status = response.data['status']
         if (status === 'SUCCESS') {
+          const download_link = response.data['url']
           this.setState({
             isConverting: false,
             file: response.data['file']
           })
-          this.retrieveFile()
+          this.retrieveFile(download_link)
         }
         else if (status === 'FAILED') {
           this.setState({
@@ -124,19 +125,33 @@ class Form extends Component {
         this.setState({ isConverting: false })
       })
   }
-  retrieveFile() {
+  retrieveFile(url) {
     const file = this.state.file
-    axios.get(`${this.state.test}/retrieve/${file}`, {
+    axios.get(url, {
       responseType: 'blob',
-      timeout: 300000,
-      headers : {'Authorization': this.state.token}
     })
       .then(response => {
-        console.log(response)
+        // console.log(response)
         FileSaver.saveAs(new Blob([response.data]), file)
+        this.deleteFromS3()
+        this.setState({
+          file: '',
+          url: ''
+        })
       })
       .catch(err => {
         this.setState({ isConverting: false })
+        console.log(err)
+      })
+  }
+  deleteFromS3() {
+    axios.get(`${this.state.api}/delete`, {
+      headers: {'Authorization': this.state.token},
+    })
+      .then(response => {
+        console.log(response.data)
+      })
+      .catch(err => {
         console.log(err)
       })
   }
