@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
-import { Section, Field, Input, Button, Container, Columns, Column, Title } from 'bloomer';
-import FileSaver from 'file-saver';
 import axios from 'axios';
+import FileSaver from 'file-saver';
+import { Section, Field, Input, Button, Container, Columns, Column, Title } from 'bloomer';
 
 import Icon from './LoadingIcon';
 
@@ -16,6 +16,7 @@ class Form extends Component {
     downloadFailed: false,
     isConverting: false,
     conversionFailed: false,
+    isComplete: false,
     api: process.env.REACT_APP_API,
     test: process.env.REACT_APP_TEST,
     token: process.env.REACT_APP_TOKEN,
@@ -104,6 +105,7 @@ class Form extends Component {
           const download_link = response.data['url']
           this.setState({
             isConverting: false,
+            isComplete: true,
             file: response.data['file']
           })
           this.retrieveFile(download_link)
@@ -155,11 +157,17 @@ class Form extends Component {
         console.log(err)
       })
   }
-  displayLoadingText() {
+  displayStatusText() {
     if (this.state.isDownloading)
       return <Title isSize={4}>downloading...</Title>
     else if (this.state.isConverting)
       return <Title isSize={4}>converting...</Title>
+    else if (this.state.isComplete)
+      return <Title isSize={4}>complete!</Title>
+    else if (this.state.downloadFailed)
+      return <Title isSize={4}>Error: Unable to download from YouTube</Title>
+    else if (this.state.conversionFailed)
+      return <Title isSize={4}>Error: Converting audio to mp3 failed</Title>
   }
   displayLoadingIcon() {
     if (this.state.isDownloading || this.state.isConverting) {
@@ -185,6 +193,11 @@ class Form extends Component {
                   isSize="medium"
                   isColor="primary"
                   hasTextAlign="centered"
+                  onClick={() => this.setState({
+                    isComplete: false,
+                    downloadFailed: false,
+                    conversionFailed: false
+                  })}
                   />
               </Column>
             </Columns>
@@ -198,7 +211,7 @@ class Form extends Component {
           </Field>
         </Section>
         {this.displayLoadingIcon()}
-        {this.displayLoadingText()}
+        {this.displayStatusText()}
       </Container>
     )
   }
