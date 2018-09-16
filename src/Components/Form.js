@@ -135,7 +135,7 @@ class Form extends Component {
       .then(response => {
         // console.log(response)
         FileSaver.saveAs(new Blob([response.data]), file)
-        this.deleteFromS3()
+        this.deleteFromS3(file)
         this.setState({
           file: '',
           url: ''
@@ -146,8 +146,8 @@ class Form extends Component {
         console.log(err)
       })
   }
-  deleteFromS3() {
-    axios.get(`${this.state.api}/delete`, {
+  deleteFromS3(file) {
+    axios.get(`${this.state.api}/delete/${file}`, {
       headers: {'Authorization': this.state.token},
     })
       .then(response => {
