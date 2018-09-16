@@ -1,10 +1,8 @@
 import React from 'react';
-import { Section, Footer, Container, Icon } from 'bloomer';
+import { Footer, Container, Icon } from 'bloomer';
 
 const Foot = props => {
   return(
-    <Section>
-
     <Footer id="footer">
       <Container>
         <a href="https://bulma.io">
@@ -15,7 +13,6 @@ const Foot = props => {
         </p>
       </Container>
     </Footer>
-    </Section>
   )
 }
 export default Foot;
