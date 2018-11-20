@@ -17,9 +17,9 @@ class Form extends Component {
     isConverting: false,
     conversionFailed: false,
     isComplete: false,
-    api: process.env.REACT_APP_API,
+    api: 'https://mp3-downloader-alex.herokuapp.com/',
+    // api: process.env.REACT_APP_API,
     test: process.env.REACT_APP_TEST,
-    token: process.env.REACT_APP_TOKEN,
   }
   handleChange = event => {
     this.setState({ [event.target.name]: event.target.value });
@@ -34,11 +34,10 @@ class Form extends Component {
   sendDownloadRequest(url) {
     const data = {'url': url}
     this.setState({ isDownloading: true })
-    axios.post(`${this.state.api}/download`, data, {
-      headers: {'Authorization': this.state.token}
-    })
+
+    axios.post(`${this.state.api}/download`, data)
       .then(response => {
-        // console.log(response)
+        console.log(response)
         const status_url = response.data['Location']
         this.checkDownloadStatus(status_url)
       })
@@ -48,20 +47,18 @@ class Form extends Component {
       })
   }
   checkDownloadStatus(status_url) {
-    axios.get(`${this.state.api}${status_url}`, {
-      headers: {'Authorization': this.state.token},
-    })
+    axios.get(`${this.state.api}${status_url}`)
       .then(response => {
-        // console.log(response)
+        console.log(response)
         const status = response.data['status']
-        if (status === 'SUCCESS') {
+        if (status === 'Complete') {
           this.setState({
             isDownloading: false,
             file: response.data['file']
           })
           this.sendConversionRequest()
         }
-        else if (status === 'FAILED') {
+        else if (status === 'Failed') {
           this.setState({
             isDownloading: false,
             downloadFailed: true,
@@ -81,11 +78,10 @@ class Form extends Component {
   sendConversionRequest() {
     const file = this.state.file
     this.setState({ isConverting: true })
-    axios.get(`${this.state.api}/convert/${file}`, {
-      headers: {'Authorization': this.state.token}
-    })
+
+    axios.get(`${this.state.api}/convert/${file}`)
       .then(response => {
-        // console.log(response)
+        console.log(response)
         const status_url = response.data['Location']
         this.checkConversionStatus(status_url)
       })
@@ -95,13 +91,11 @@ class Form extends Component {
       })
   }
   checkConversionStatus(status_url) {
-    axios.get(`${this.state.api}${status_url}`, {
-      headers: {'Authorization': this.state.token},
-    })
+    axios.get(`${this.state.api}${status_url}`)
       .then(response => {
-        // console.log(response)
+        console.log(response)
         const status = response.data['status']
-        if (status === 'SUCCESS') {
+        if (status === 'Complete') {
           const download_link = response.data['url']
           this.setState({
             isConverting: false,
@@ -110,7 +104,7 @@ class Form extends Component {
           })
           this.retrieveFile(download_link)
         }
-        else if (status === 'FAILED') {
+        else if (status === 'Failed') {
           this.setState({
             isConverting: false,
             conversionFailed: true,
@@ -133,27 +127,12 @@ class Form extends Component {
       responseType: 'blob',
     })
       .then(response => {
-        // console.log(response)
+        console.log(response)
         FileSaver.saveAs(new Blob([response.data]), file)
-        this.deleteFromS3(file)
-        this.setState({
-          file: '',
-          url: ''
-        })
+        this.setState({ file: '', url: '' })
       })
       .catch(err => {
         this.setState({ isConverting: false })
-        console.log(err)
-      })
-  }
-  deleteFromS3(file) {
-    axios.get(`${this.state.api}/delete/${file}`, {
-      headers: {'Authorization': this.state.token},
-    })
-      .then(response => {
-        console.log(response.data)
-      })
-      .catch(err => {
         console.log(err)
       })
   }
