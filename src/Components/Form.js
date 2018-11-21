@@ -5,8 +5,6 @@ import { Section, Field, Input, Button, Container, Columns, Column, Title } from
 
 import Icon from './LoadingIcon';
 
-// require("dotenv").config()
-
 
 class Form extends Component {
   state = {
