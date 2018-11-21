@@ -34,7 +34,7 @@ class Form extends Component {
     const data = {'url': url}
     this.setState({ isDownloading: true })
 
-    axios.post(`${this.state.test}/download`, data)
+    axios.post(`${this.state.api}/download`, data)
       .then(response => {
         const status_url = response.data['status']
         this.checkDownloadStatus(status_url)
@@ -45,7 +45,7 @@ class Form extends Component {
       })
   }
   checkDownloadStatus(status_url) {
-    axios.get(`${this.state.test}${status_url}`)
+    axios.get(`${this.state.api}${status_url}`)
       .then(response => {
         const status = response.data['status']
         if (status === 'Complete') {
@@ -76,7 +76,7 @@ class Form extends Component {
     const file = this.state.file
     this.setState({ isConverting: true })
 
-    axios.get(`${this.state.test}/convert/${file}`)
+    axios.get(`${this.state.api}/convert/${file}`)
       .then(response => {
         const status_url = response.data['status']
         this.checkConversionStatus(status_url)
@@ -87,7 +87,7 @@ class Form extends Component {
       })
   }
   checkConversionStatus(status_url) {
-    axios.get(`${this.state.test}${status_url}`)
+    axios.get(`${this.state.api}${status_url}`)
       .then(response => {
         const status = response.data['status']
         if (status === 'Complete') {
@@ -117,7 +117,7 @@ class Form extends Component {
   }
   retrieveFile() {
     const file = this.state.file
-    axios.get(`${this.state.test}/retrieve/${file}`, {
+    axios.get(`${this.state.api}/retrieve/${file}`, {
       responseType: 'blob',
     })
       .then(response => {
