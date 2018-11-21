@@ -17,8 +17,7 @@ class Form extends Component {
     isConverting: false,
     conversionFailed: false,
     isComplete: false,
-    api: 'https://mp3-downloader-alex.herokuapp.com/',
-    // api: process.env.REACT_APP_API,
+    api: process.env.REACT_APP_API,
     test: process.env.REACT_APP_TEST,
   }
   handleChange = event => {
@@ -37,8 +36,7 @@ class Form extends Component {
 
     axios.post(`${this.state.api}/download`, data)
       .then(response => {
-        console.log(response)
-        const status_url = response.data['Location']
+        const status_url = response.data['status']
         this.checkDownloadStatus(status_url)
       })
       .catch(err => {
@@ -49,7 +47,6 @@ class Form extends Component {
   checkDownloadStatus(status_url) {
     axios.get(`${this.state.api}${status_url}`)
       .then(response => {
-        console.log(response)
         const status = response.data['status']
         if (status === 'Complete') {
           this.setState({
@@ -81,8 +78,7 @@ class Form extends Component {
 
     axios.get(`${this.state.api}/convert/${file}`)
       .then(response => {
-        console.log(response)
-        const status_url = response.data['Location']
+        const status_url = response.data['status']
         this.checkConversionStatus(status_url)
       })
       .catch(err => {
@@ -93,16 +89,14 @@ class Form extends Component {
   checkConversionStatus(status_url) {
     axios.get(`${this.state.api}${status_url}`)
       .then(response => {
-        console.log(response)
         const status = response.data['status']
         if (status === 'Complete') {
-          const download_link = response.data['url']
           this.setState({
             isConverting: false,
             isComplete: true,
             file: response.data['file']
           })
-          this.retrieveFile(download_link)
+          this.retrieveFile()
         }
         else if (status === 'Failed') {
           this.setState({
@@ -121,13 +115,12 @@ class Form extends Component {
         this.setState({ isConverting: false })
       })
   }
-  retrieveFile(url) {
+  retrieveFile() {
     const file = this.state.file
-    axios.get(url, {
+    axios.get(`${this.state.api}/retrieve/${file}`, {
       responseType: 'blob',
     })
       .then(response => {
-        console.log(response)
         FileSaver.saveAs(new Blob([response.data]), file)
         this.setState({ file: '', url: '' })
       })
